@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>AIRACSS ECO SYSTEM — Mint & Faucet (BNB Testnet)</title>
+
+<!-- ethers UMD (browser global `ethers`) -->
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+
+<style>
+  :root{
+    --bg:#041029; --card:#071428; --accent:#57a6ff; --accent-2:#9b7dff;
+    --accent-3:#6b8bff; --muted:#91a9c6; --glass:rgba(255,255,255,0.03); 
+    --success:#2dd4bf; --danger:#ff6b6b; --warning:#ffb86c;
+    --gradient-primary: linear-gradient(135deg, #57a6ff, #9b7dff);
+    --gradient-secondary: linear-gradient(135deg, #6b8bff, #9b7dff);
+    --gradient-danger: linear-gradient(135deg, #ff9a8b, #ff6b6b);
+    --gradient-success: linear-gradient(135deg, #2dd4bf, #34d399);
+    --gradient-crystal-purple: linear-gradient(135deg, #a78bfa, #c084fc, #e879f9);
+    --pastel-blue: linear-gradient(135deg, #93c5fd, #a5b4fc);
+    --pastel-green: linear-gradient(135deg, #86efac, #6ee7b7);
+    --pastel-pink: linear-gradient(135deg, #f9a8d4, #f472b6);
+    --purple-text: #c084fc;
+    --yellow-accent: #fde047;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;background:linear-gradient(180deg,#001021 0%, #041029 100%);color:#e8f6ff;min-height:100vh}
+  .container{max-width:1100px;margin:28px auto;padding:18px}
+  header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.05);flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:16px}
+  .logo{width:56px;height:56px;border-radius:12px;background:var(--gradient-primary);display:flex;align-items:center;justify-content:center;font-weight:800;color:#012034;font-size:22px;box-shadow:0 4px 12px rgba(87,166,255,0.3);flex-shrink:0}
+  h1{margin:0;font-size:22px;font-weight:700;background:var(--gradient-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .tagline{color:var(--purple-text);font-size:13px;margin-top:4px;font-weight:700}
+  .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+  button{background:var(--gradient-primary);border:none;color:#021426;padding:10px 18px;border-radius:10px;cursor:pointer;font-weight:600;transition:all 0.3s ease;box-shadow:0 4px 12px rgba(87,166,255,0.2)}
+  button:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(87,166,255,0.3)}
+  button:active{transform:translateY(0)}
+  button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.08);color:var(--purple-text);box-shadow:none}
+  button.ghost:hover{background:rgba(255,255,255,0.05);border-color:var(--purple-text);color:#e8f6ff}
+  button.warn{background:var(--gradient-danger);box-shadow:0 4px 12px rgba(255,107,107,0.2)}
+  button.warn:hover{box-shadow:0 6px 16px rgba(255,107,107,0.3)}
+  button.faucet{background:var(--gradient-secondary);box-shadow:0 4px 12px rgba(107,139,255,0.2)}
+  button.faucet:hover{box-shadow:0 6px 16px rgba(107,139,255,0.3)}
+  button.success{background:var(--gradient-primary);box-shadow:0 4px 12px rgba(87,166,255,0.2)}
+  button.success:hover{box-shadow:0 6px 16px rgba(87,166,255,0.3)}
+  button.select{background:var(--gradient-crystal-purple);box-shadow:0 4px 12px rgba(167,139,250,0.3);color:#021426}
+  button.select:hover{box-shadow:0 6px 16px rgba(167,139,250,0.4);transform:translateY(-2px)}
+  button.small{padding:8px 14px;font-size:14px}
+  .card{background:var(--card);border-radius:16px;padding:22px;margin-top:18px;box-shadow:0 10px 30px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.03)}
+  .layout{display:grid;grid-template-columns:1fr 380px;gap:22px;margin-top:18px}
+  .grid{display:flex;gap:14px;flex-wrap:wrap}
+  .nft{width:calc(33.333% - 10px);background:linear-gradient(180deg,rgba(255,255,255,0.03),transparent);padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);text-align:center;transition:all 0.3s ease}
+  .nft:hover{transform:translateY(-4px);box-shadow:0 8px 20px rgba(0,0,0,0.4)}
+  .nft img{width:100%;height:150px;object-fit:cover;border-radius:10px;margin-bottom:10px}
+  .nft h3{margin:8px 0 6px;font-size:15px;font-weight:600}
+  .nft p{margin:0;color:var(--muted);font-size:13px}
+  .selected{outline:3px solid rgba(167,139,250,0.15);box-shadow:0 8px 30px rgba(167,139,250,0.15);transform:translateY(-2px)}
+  .info-row{display:flex;gap:12px;align-items:center;margin-top:16px;flex-wrap:wrap}
+  input[type=number]{width:90px;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.05);color:#e8f6ff;font-weight:600;text-align:center}
+  input[type=number]:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(87,166,255,0.2)}
+  .status{margin-top:16px;padding:14px;border-radius:12px;background:#021526;color:#cfe9ff;font-weight:600;border-left:4px solid var(--accent)}
+  .preview img{width:100%;height:240px;object-fit:cover;border-radius:12px;border:1px solid rgba(255,255,255,0.05)}
+  .muted{color:var(--muted)}
+  .copyable{cursor:pointer;color:var(--accent);font-weight:700;transition:all 0.2s ease}
+  .copyable:hover{color:var(--accent-2);text-decoration:underline}
+  .footer{margin-top:28px;color:var(--muted);font-size:13px;text-align:center;padding-top:16px;border-top:1px solid rgba(255,255,255,0.05)}
+  
+  /* BscScan link styling */
+  .bsc-link {color:var(--yellow-accent);font-weight:800;text-decoration:none;transition:all 0.2s ease}
+  .bsc-link:hover {color:#facc15;text-decoration:underline;transform:translateY(-1px)}
+  
+  /* New styles for DeFi options */
+  .defi-tabs {display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+  .defi-tab {padding:12px 18px;border-radius:10px;background:rgba(255,255,255,0.03);cursor:pointer;font-size:14px;transition:all 0.2s;font-weight:500;flex:1;min-width:120px;text-align:center}
+  .defi-tab:hover {background:rgba(255,255,255,0.07)}
+  .defi-tab.active {background:var(--accent);color:#021426;font-weight:600;box-shadow:0 4px 12px rgba(87,166,255,0.2)}
+  .defi-content {margin-top:16px;padding:18px;border-radius:12px;background:rgba(0,0,0,0.2);display:none;border:1px solid rgba(255,255,255,0.03)}
+  .defi-content.active {display:block}
+  .defi-link {display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;background:var(--pastel-blue);margin-bottom:10px;text-decoration:none;color:#1e293b;transition:all 0.2s;font-weight:500;box-shadow:0 4px 12px rgba(147,197,253,0.3)}
+  .defi-link:hover {transform:translateX(4px);box-shadow:0 6px 16px rgba(147,197,253,0.4)}
+  .defi-link.add-liquidity {background:var(--pastel-green);box-shadow:0 4px 12px rgba(134,239,172,0.3)}
+  .defi-link.add-liquidity:hover {box-shadow:0 6px 16px rgba(134,239,172,0.4)}
+  .defi-link.remove-liquidity {background:var(--pastel-pink);box-shadow:0 4px 12px rgba(249,168,212,0.3)}
+  .defi-link.remove-liquidity:hover {box-shadow:0 6px 16px rgba(249,168,212,0.4)}
+  .defi-icon {width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.2);font-weight:bold;color:#1e293b}
+  
+  /* Social icons in footer */
+  .social-icons {display:flex;gap:14px;margin-top:12px;justify-content:center;flex-wrap:wrap}
+  .social-icon {width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;transition:all 0.3s ease}
+  .social-icon:hover {background:var(--gradient-primary);transform:translateY(-3px);box-shadow:0 6px 12px rgba(87,166,255,0.3)}
+  .social-icon svg {width:20px;height:20px;fill:var(--muted);transition:all 0.3s ease}
+  .social-icon:hover svg {fill:white}
+  
+  /* Enhanced elements */
+  .tx{font-size:13px;color:var(--muted);word-break:break-word}
+  .toast{position:fixed;right:22px;bottom:22px;background:#031b2a;padding:14px 18px;border-radius:12px;color:#dff7ff;box-shadow:0 10px 30px rgba(2,6,23,0.7);z-index:1000;border-left:4px solid var(--accent)}
+  .mutedSmall{font-size:12px;color:var(--purple-text);font-weight:600}
+  .section-title {font-size:18px;font-weight:700;margin-bottom:12px;background:var(--gradient-primary);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .highlight {color:var(--purple-text);font-weight:600}
+  
+  /* NFT description styling */
+  .nft-description {color:var(--muted);font-size:14px;margin-bottom:6px;font-weight:600}
+  
+  /* Address display styles */
+  .address-container {margin-top:12px;padding:12px;background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.05)}
+  .address-label {font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:500}
+  .address-value {font-size:12px;word-break:break-all;color:var(--accent);font-weight:600;cursor:pointer;transition:all 0.2s ease;padding:4px 0}
+  .address-value:hover {color:var(--accent-2);text-decoration:underline}
+  
+  /* Responsive Design */
+  @media (max-width: 1024px) {
+    .container { padding: 16px; }
+    .layout { grid-template-columns: 1fr; gap: 18px; }
+    .nft { width: calc(50% - 10px); }
+  }
+  
+  @media (max-width: 768px) {
+    header { flex-direction: column; align-items: flex-start; gap: 16px; }
+    .brand { width: 100%; }
+    .controls { width: 100%; justify-content: flex-start; }
+    .nft { width: 100%; }
+    .info-row { flex-direction: column; align-items: flex-start; }
+    .info-row > * { width: 100%; margin-bottom: 10px; }
+    input[type=number] { width: 100%; }
+    .defi-tab { min-width: 100px; padding: 10px 14px; }
+    .card { padding: 18px; }
+  }
+  
+  @media (max-width: 480px) {
+    .container { padding: 12px; margin: 16px auto; }
+    .logo { width: 48px; height: 48px; font-size: 20px; }
+    h1 { font-size: 18px; }
+    .tagline { font-size: 12px; }
+    button { padding: 10px 14px; font-size: 14px; }
+    .defi-tab { min-width: 80px; padding: 8px 12px; font-size: 13px; }
+    .defi-link { padding: 12px; }
+    .social-icon { width: 36px; height: 36px; }
+    .social-icon svg { width: 18px; height: 18px; }
+    .preview img { height: 200px; }
+  }
+  
+  @media (max-width: 360px) {
+    .container { padding: 10px; }
+    .card { padding: 14px; }
+    .defi-tabs { flex-direction: column; }
+    .defi-tab { min-width: 100%; }
+  }
+</style>
+
+<!-- Favicon with same logo -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='url(%23grad)'/><path d='M35 30L45 50L35 70H65L55 50L65 30H35Z' fill='%23021026'/><defs><linearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%2357a6ff'/><stop offset='100%25' stop-color='%239b7dff'/></linearGradient></defs></svg>" type="image/svg+xml">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="brand">
+        <div class="logo">
+          <svg width="28" height="28" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100" height="100" rx="20" fill="url(#grad)"/>
+            <path d="M35 30L45 50L35 70H65L55 50L65 30H35Z" fill="#021426"/>
+            <defs>
+              <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#57a6ff"/>
+                <stop offset="100%" stop-color="#9b7dff"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div>
+          <h1>AIRACSS ECOSYSTEM</h1>
+          <div class="tagline">BNB Testnet • Faucet, Add Token & Mint — real transactions</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button id="addTokenBtn" class="small ghost">Add Token to Wallet</button>
+        <button id="addNetworkBtn" class="small ghost">Add BNB Testnet</button>
+        <div id="walletControls">
+          <button id="connectBtn" class="success">Connect Wallet</button>
+          <button id="disconnectBtn" class="ghost small" style="display:none">Disconnect</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="card">
+      <div class="layout">
+        <div>
+          <h2 class="section-title">Mint AIRACSS NFTs</h2>
+          <div class="nft-description">Select a category and mint. Each NFT costs <strong class="highlight">2 AIRACSS</strong>.</div>
+
+          <div class="grid" id="nftGrid" style="margin-top:16px"></div>
+
+          <div class="info-row" style="margin-top:18px">
+            <input id="qty" type="number" min="1" max="10" value="1">
+            <button id="approveBtn" class="success">Approve Token</button>
+            <button id="mintBtn" class="warn" disabled>Mint Selected</button>
+            <div style="margin-left:8px" class="mutedSmall">Per tx limit: 10 · Per wallet: 100</div>
+          </div>
+
+          <div style="margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <button id="faucetBtn" class="faucet">Claim Faucet</button>
+            <div id="faucetTimer" class="mutedSmall">Ready</div>
+          </div>
+
+          <div id="status" class="status">Status: not connected</div>
+          
+          <!-- DeFi Options Section -->
+          <div style="margin-top:28px">
+            <h3 class="section-title">DeFi Options</h3>
+            <div class="defi-tabs">
+              <div class="defi-tab active" data-tab="swap">Swap</div>
+              <div class="defi-tab" data-tab="liquidity">Liquidity</div>
+            </div>
+            
+            <div class="defi-content active" id="swap-content">
+              <a href="https://pancakeswap.finance/swap?chain=bscTestnet&chainOut=bscTestnet&inputCurrency=TBNB&outputCurrency=0x7D73fF735E210ab1Da50D931FDA899154f646E80&exactAmount=&exactField=INPUT" 
+                 target="_blank" class="defi-link">
+                <div class="defi-icon">↔</div>
+                <div>Swap AIRACSS on PancakeSwap</div>
+              </a>
+            </div>
+            
+            <div class="defi-content" id="liquidity-content">
+              <a href="https://pancakeswap.finance/liquidity/select/bscTestnet/v2/tBNB/0x7D73fF735E210ab1Da50D931FDA899154f646E80?chain=bscTestnet" 
+                 target="_blank" class="defi-link add-liquidity">
+                <div class="defi-icon">+</div>
+                <div>Add Liquidity</div>
+              </a>
+              <a href="https://pancakeswap.finance/v2/remove/0x7D73fF735E210ab1Da50D931FDA899154f646E80/0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd" 
+                 target="_blank" class="defi-link remove-liquidity">
+                <div class="defi-icon">-</div>
+                <div>Remove Liquidity</div>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="card preview">
+            <img id="previewImg" src="" alt="preview">
+            <h3 id="previewTitle" style="margin:12px 0 6px">—</h3>
+            <p id="previewDesc" class="muted">Select a category to preview metadata & image</p>
+            <div style="margin-top:14px" class="muted">Next tokenId (approx): <span id="nextId" class="highlight">—</span></div>
+            <div style="margin-top:10px" class="tx" id="lastTx">Last tx: —</div>
+            <div id="txLink" style="margin-top:8px"></div>
+          </div>
+
+          <div style="margin-top:16px" class="card">
+            <div class="muted" style="font-weight:600">Useful Information</div>
+            <div style="margin-top:10px" class="mutedSmall">Only token address is shown publicly for safety. Other contract details are hidden.</div>
+            
+            <!-- Contact Address Section -->
+            <div class="address-container">
+              <div class="address-label">AIRACSS Contact Address</div>
+              <div class="address-value" id="contactAddress">0x7D73fF735E210ab1Da50D931FDA899154f646E80</div>
+              <div class="mutedSmall" style="margin-top:6px;font-size:11px">Click to copy address</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>Built for AIRACSS • Testnet interactions are real. Use MetaMask on BNB Testnet.</div>
+      <div class="social-icons">
+        <a href="https://t.me/airdropaccess11" target="_blank" class="social-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.14.141-.259.259-.374.261l.213-3.053 5.56-5.022c.24-.213-.054-.334-.373-.121l-6.869 4.326-2.96-.924c-.64-.203-.658-.64.136-.954l11.566-4.458c.538-.196 1.006.128.832.941z"/>
+          </svg>
+        </a>
+        <a href="https://discord.gg/YmVjJxgq9g" target="_blank" class="social-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 127.14 96.36">
+            <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/>
+          </svg>
+        </a>
+        <a href="https://x.com/onlinesupprt7" target="_blank" class="social-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" style="display:none"></div>
+
+<script>
+/* Final deploy-ready portal using the ABI you provided.
+   - Faucet ABI (uses requestTokens + canRequest/timeUntilNextRequest)
+   - Token add to MetaMask, copy token address
+   - Approve and mint flows
+   - Faucet cooldown derived from contract read (timeUntilNextRequest)
+   - Serve via Live Server or HTTPS
+*/
+
+(async ()=>{
+
+  if (typeof ethers === 'undefined') {
+    alert('ethers.js not loaded. Serve this file via Live Server or ensure CDN loads.');
+    return;
+  }
+
+  // ======= CONFIG =======
+  const NFT_CONTRACT = "0xf891bd85C6A64093373c4dc8FC1f6F723E8b4fbc"; // UPDATED NFT CONTRACT ADDRESS
+  const AIRACSS_TOKEN = "0x7D73fF735E210ab1Da50D931FDA899154f646E80";
+  const FAUCET_CONTRACT = "0x0D0D98E79773ADA350Aecda63A3Fd868452fb59C";
+
+  // IPFS images (your CID)
+  const IMAGE_CID = 'bafybeih73tk27yukbehwnlem65dpil47uqi7bgl5bh6mmllyik2nxbnnxi';
+  const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs';
+
+  const CATEGORIES = [
+    { id:'digital', title:'Digital Marge', desc:'AIRACSS Genesis — Digital Marge', file:'digital_marge.png', price:2 },
+    { id:'quantum', title:'Quantum Vains', desc:'AIRACSS Genesis — Quantum Vains', file:'quantum_vains.png', price:2 },
+    { id:'neural', title:'Neural Plus', desc:'AIRACSS Genesis — Neural Plus', file:'neural_plus.png', price:2 }
+  ];
+
+  // ABIs
+  const ERC20_ABI = [
+    "function approve(address spender, uint256 amount) public returns (bool)",
+    "function allowance(address owner, address spender) public view returns (uint256)",
+    "function decimals() view returns (uint8)",
+    "function balanceOf(address owner) view returns (uint256)"
+  ];
+  const NFT_ABI = [
+    "function mint(uint256 quantity) external",
+    "function minted() public view returns (uint256)",
+    "function totalSupply() public view returns (uint256)"
+  ];
+  // Faucet ABI (as provided earlier)
+  const FAUCET_ABI = [{"inputs":[{"internalType":"address","name":"_airacssToken","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newCooldown","type":"uint256"}],"name":"CooldownChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newAmount","type":"uint256"}],"name":"DripAmountChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"recipient","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"TokensDripped","type":"event"},{"inputs":[],"name":"airacssToken","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_address","type":"address"}],"name":"canRequest","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"cooldownPeriod","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"dripAmount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"faucetBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"fundFaucet","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"lastRequest","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"requestTokens","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_newCooldown","type":"uint256"}],"name":"setCooldownPeriod","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_newAmount","type":"uint256"}],"name":"setDripAmount","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_address","type":"address"}],"name":"timeUntilNextRequest","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"withdrawTokens","outputs":[],"stateMutability":"nonpayable","type":"function"}];
+
+  // DOM refs
+  const connectBtn = document.getElementById('connectBtn');
+  const disconnectBtn = document.getElementById('disconnectBtn');
+  const addTokenBtn = document.getElementById('addTokenBtn');
+  const addNetworkBtn = document.getElementById('addNetworkBtn');
+  const nftGrid = document.getElementById('nftGrid');
+  const qtyEl = document.getElementById('qty');
+  const approveBtn = document.getElementById('approveBtn');
+  const mintBtn = document.getElementById('mintBtn');
+  const statusEl = document.getElementById('status');
+  const previewImg = document.getElementById('previewImg');
+  const previewTitle = document.getElementById('previewTitle');
+  const previewDesc = document.getElementById('previewDesc');
+  const nextIdEl = document.getElementById('nextId');
+  const lastTx = document.getElementById('lastTx');
+  const txLink = document.getElementById('txLink');
+  const faucetBtn = document.getElementById('faucetBtn');
+  const faucetTimer = document.getElementById('faucetTimer');
+  const toast = document.getElementById('toast');
+  const contactAddress = document.getElementById('contactAddress');
+
+  // state
+  let provider, signer, userAddress, tokenContract, nftContract, faucetContract;
+  let tokenDecimals = 18;
+  let selected = CATEGORIES[0];
+
+  // helpers
+  function showToast(msg, t=4000){ toast.innerText = msg; toast.style.display='block'; clearTimeout(toast._t); toast._t=setTimeout(()=>toast.style.display='none',t); }
+  function setStatus(txt){ statusEl.innerText = 'Status: ' + txt; }
+  function bscScanTx(h){ return `https://testnet.bscscan.com/tx/${h}`; }
+
+  // render NFTs
+  function renderNFTs(){
+    nftGrid.innerHTML = '';
+    for(const c of CATEGORIES){
+      const div = document.createElement('div');
+      div.className = 'nft';
+      div.id = 'cat-'+c.id;
+      div.innerHTML = `
+        <img src="${IPFS_GATEWAY}/${IMAGE_CID}/${c.file}" alt="${c.title}">
+        <h3>${c.title}</h3>
+        <p>${c.desc}</p>
+        <div style="margin-top:10px"><button class="select small selBtn" data-id="${c.id}">Select & Preview</button></div>
+      `;
+      nftGrid.appendChild(div);
+    }
+    document.querySelectorAll('.selBtn').forEach(b=>b.onclick=()=>selectCategory(b.dataset.id));
+    selectCategory(CATEGORIES[0].id);
+  }
+
+  function selectCategory(id){
+    selected = CATEGORIES.find(x=>x.id===id);
+    CATEGORIES.forEach(c=> {
+      const el = document.getElementById('cat-'+c.id);
+      if (c.id===id) el.classList.add('selected'); else el.classList.remove('selected');
+    });
+    previewImg.src = `${IPFS_GATEWAY}/${IMAGE_CID}/${selected.file}`;
+    previewTitle.innerText = selected.title;
+    previewDesc.innerText = selected.desc;
+  }
+
+  // connect wallet
+  connectBtn.onclick = async ()=>{
+    try{
+      if (!window.ethereum) { alert('MetaMask not detected.'); return; }
+      await window.ethereum.request({ method:'eth_requestAccounts' });
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      signer = provider.getSigner();
+      userAddress = await signer.getAddress();
+      setStatus('Connected: ' + userAddress);
+      connectBtn.style.display='none'; disconnectBtn.style.display='inline-block';
+      // instantiate
+      tokenContract = new ethers.Contract(AIRACSS_TOKEN, ERC20_ABI, signer);
+      nftContract = new ethers.Contract(NFT_CONTRACT, NFT_ABI, signer);
+      faucetContract = new ethers.Contract(FAUCET_CONTRACT, FAUCET_ABI, signer);
+      try{ tokenDecimals = await tokenContract.decimals(); } catch(e){ tokenDecimals=18; }
+      approveBtn.disabled=false; mintBtn.disabled=false; qtyEl.disabled=false;
+      updateNextId();
+      updateFaucetUI();
+      showToast('Wallet connected');
+    }catch(err){
+      console.error(err); setStatus('Connect failed: ' + (err.message||err));
+    }
+  };
+
+  disconnectBtn.onclick = ()=>{
+    signer=null;provider=null;userAddress=null;tokenContract=null;nftContract=null;faucetContract=null;
+    connectBtn.style.display='inline-block'; disconnectBtn.style.display='none';
+    approveBtn.disabled=true; mintBtn.disabled=true; qtyEl.disabled=true;
+    setStatus('Disconnected'); showToast('Wallet disconnected');
+    if (window.__faucetInterval) { clearInterval(window.__faucetInterval); window.__faucetInterval = null; }
+    faucetTimer.innerText = 'Connect wallet to use';
+  };
+
+  // add token to MetaMask
+  addTokenBtn.onclick = async ()=>{
+    if (!window.ethereum) { alert('MetaMask not found'); return; }
+    try{
+      await window.ethereum.request({
+        method: 'wallet_watchAsset',
+        params: {
+          type: 'ERC20',
+          options: { address: AIRACSS_TOKEN, symbol: 'AIRACSS', decimals: 18, image: '' }
+        }
+      });
+      showToast('Add token requested in MetaMask');
+    }catch(e){ console.error(e); showToast('Add token failed'); }
+  };
+
+  // add BNB Testnet network
+  addNetworkBtn.onclick = async ()=>{
+    if (!window.ethereum) { alert('MetaMask not found'); return; }
+    try{
+      await window.ethereum.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: '0x61', // 97 in hexadecimal
+          chainName: 'BNB Smart Chain Testnet',
+          nativeCurrency: {
+            name: 'BNB',
+            symbol: 'tBNB',
+            decimals: 18
+          },
+          rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545/'],
+          blockExplorerUrls: ['https://testnet.bscscan.com/']
+        }]
+      });
+      showToast('BNB Testnet added to MetaMask');
+    }catch(e){ 
+      console.error(e); 
+      showToast('Failed to add network'); 
+    }
+  };
+
+  // approve
+  approveBtn.onclick = async ()=>{
+    try{
+      if (!tokenContract) { alert('Connect first'); return; }
+      const big = ethers.utils.parseUnits('1000000', tokenDecimals);
+      setStatus('Sending approve tx...');
+      const tx = await tokenContract.approve(NFT_CONTRACT, big);
+      lastTx.innerText = 'Approve tx: ' + tx.hash;
+      txLink.innerHTML = `<a target="_blank" href="${bscScanTx(tx.hash)}" class="bsc-link">View on BscScan</a>`;
+      await tx.wait();
+      setStatus('Approve confirmed');
+      showToast('Approve confirmed');
+    }catch(err){ console.error(err); setStatus('Approve failed: ' + (err.message||err)); showToast('Approve failed'); }
+  };
+
+  // mint
+  mintBtn.onclick = async ()=>{
+    try{
+      if (!nftContract || !tokenContract) { alert('Connect first'); return; }
+      const qty = Number(qtyEl.value||1);
+      if (!Number.isInteger(qty) || qty<1 || qty>10) { alert('Qty 1-10'); return; }
+      const allowance = await tokenContract.allowance(userAddress, NFT_CONTRACT);
+      const required = ethers.utils.parseUnits((selected.price * qty).toString(), tokenDecimals);
+      if (allowance.lt(required)) { alert('Allowance too low — approve first'); return; }
+      setStatus('Sending mint tx...');
+      let tx;
+      try {
+        const gas = await nftContract.estimateGas.mint(qty, { from: userAddress });
+        tx = await nftContract.mint(qty, { gasLimit: gas.mul(120).div(100) });
+      } catch(e) {
+        tx = await nftContract.mint(qty);
+      }
+      lastTx.innerText = 'Mint tx: ' + tx.hash;
+      txLink.innerHTML = `<a target="_blank" href="${bscScanTx(tx.hash)}" class="bsc-link">View on BscScan</a>`;
+      setStatus('Mint sent: ' + tx.hash);
+      await tx.wait();
+      setStatus('Mint confirmed: ' + tx.hash);
+      showToast('Mint confirmed');
+      updateNextId();
+    }catch(err){ console.error(err); setStatus('Mint failed: ' + (err.message||err)); showToast('Mint failed'); }
+  };
+
+  // update next token id
+  async function updateNextId(){
+    try{
+      if (!nftContract) { nextIdEl.innerText='—'; return; }
+      const minted = await nftContract.minted();
+      const next = minted.toNumber ? minted.toNumber()+1 : Number(minted)+1;
+      nextIdEl.innerText = next;
+    }catch(e){ console.warn('Cannot read minted():', e); nextIdEl.innerText='—'; }
+  }
+
+  // --- Faucet Functions (BNB Testnet, AIRACSS Faucet) ---
+  async function getFaucetState() {
+    try {
+      if (!faucetContract || !userAddress)
+        return { canRequest: false, until: 0, drip: 0, balance: 0 };
+
+      const can = await faucetContract.canRequest(userAddress);
+      const until = Number(await faucetContract.timeUntilNextRequest(userAddress));
+      const drip = Number(await faucetContract.dripAmount());
+      const bal = Number(await faucetContract.faucetBalance());
+
+      return { canRequest: can, until, drip, balance: bal };
+    } catch (e) {
+      console.error("getFaucetState error", e);
+      return { canRequest: false, until: 0, drip: 0, balance: 0 };
+    }
+  }
+
+  async function updateFaucetUI() {
+    try {
+      if (!faucetContract || !userAddress) {
+        faucetTimer.innerText = "Connect wallet to use";
+        faucetBtn.disabled = true;
+        return;
+      }
+
+      const st = await getFaucetState();
+
+      if (window.__faucetInterval) {
+        clearInterval(window.__faucetInterval);
+        window.__faucetInterval = null;
+      }
+
+      if (st.canRequest || st.until <= 0) {
+        faucetTimer.innerText = "Ready";
+        faucetBtn.disabled = false;
+      } else {
+        faucetBtn.disabled = true;
+        const target = Date.now() + st.until * 1000;
+
+        function tick() {
+          const diff = target - Date.now();
+          if (diff <= 0) {
+            faucetTimer.innerText = "Ready";
+            faucetBtn.disabled = false;
+            clearInterval(window.__faucetInterval);
+            window.__faucetInterval = null;
+            return;
+          }
+          const h = Math.floor(diff / 3600000);
+          const m = Math.floor((diff % 3600000) / 60000);
+          const s = Math.floor((diff % 60000) / 1000);
+          faucetTimer.innerText = `${h}h ${m}m ${s}s`;
+        }
+
+        tick();
+        window.__faucetInterval = setInterval(tick, 1000);
+      }
+    } catch (e) {
+      console.error("updateFaucetUI failed", e);
+      faucetTimer.innerText = "Error";
+      faucetBtn.disabled = true;
+    }
+  }
+
+  faucetBtn.onclick = async () => {
+    try {
+      if (!faucetContract || !signer) {
+        alert("Connect your wallet first");
+        return;
+      }
+
+      setStatus("Sending faucet transaction...");
+      const tx = await faucetContract.requestTokens();
+      lastTx.innerText = "Faucet tx: " + tx.hash;
+      txLink.innerHTML = `<a target="_blank" href="${bscScanTx(tx.hash)}" class="bsc-link">View on BscScan</a>`;
+      showToast("Transaction sent!");
+      await tx.wait();
+      setStatus("Faucet confirmed ✅");
+      showToast("Faucet claim successful!");
+      setTimeout(() => updateFaucetUI(), 1500);
+    } catch (err) {
+      console.error("Faucet claim error", err);
+      let msg =
+        (err?.error?.message ||
+          err?.data?.message ||
+          err?.message ||
+          "Transaction failed");
+      showToast(msg);
+      setStatus("Faucet failed ❌: " + msg);
+    }
+  };
+
+  // Copy contact address functionality
+  contactAddress.onclick = async ()=>{
+    try{ 
+      await navigator.clipboard.writeText(contactAddress.innerText.trim()); 
+      showToast('Contact address copied to clipboard'); 
+    } catch(e){ 
+      showToast('Copy failed, please select and copy manually'); 
+    }
+  };
+
+  // DeFi tabs functionality
+  document.querySelectorAll('.defi-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      // Remove active class from all tabs and contents
+      document.querySelectorAll('.defi-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.defi-content').forEach(c => c.classList.remove('active'));
+      
+      // Add active class to clicked tab and corresponding content
+      tab.classList.add('active');
+      const tabId = tab.getAttribute('data-tab');
+      document.getElementById(`${tabId}-content`).classList.add('active');
+    });
+  });
+
+  // initial render & wiring
+  renderNFTs();
+  setStatus('Ready — please connect wallet');
+  updateFaucetUI();
+
+  // event listeners for wallet changes
+  if (window.ethereum) {
+    window.ethereum.on('accountsChanged', (accounts) => {
+      if (!accounts || accounts.length===0) {
+        disconnectBtn.click();
+      } else {
+        // set new user
+        setStatus('Account changed: ' + accounts[0]);
+        // re-init after short delay
+        setTimeout(()=> connectBtn.click(), 500);
+      }
+    });
+    window.ethereum.on('chainChanged', (chainId) => {
+      setStatus('Chain changed: ' + chainId + ' — ensure BNB Testnet (97)');
+    });
+  }
+
+})();
+</script>
+</body>
+</html>
