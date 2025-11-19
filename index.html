@@ -317,7 +317,7 @@
     { id:'quantum', title:'Quantum Vains', desc:'AIRACSS Genesis — Quantum Vains', file:'quantum_vains.png', price:1, contract: NFT_CONTRACTS.quantum }
   ];
 
-  // ABIs - FIXED VERSION WITH PROPER NFT FUNCTIONS
+  // FIXED ABI - আপনার contracts অনুযায়ী সঠিক ABI
   const ERC20_ABI = [
     "function approve(address spender, uint256 amount) public returns (bool)",
     "function allowance(address owner, address spender) public view returns (uint256)",
@@ -325,14 +325,15 @@
     "function balanceOf(address owner) view returns (uint256)"
   ];
   
-  // FIXED NFT ABI - Added tokenOfOwnerByIndex and tokenURI functions
+  // FIXED NFT ABI - আপনার contracts এ যে functions আছে শুধু সেগুলো
   const NFT_ABI = [
     "function mint(uint256 quantity) external",
-    "function balanceOf(address owner) view returns (uint256)",
     "function totalSupply() view returns (uint256)",
-    "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)",
+    "function ownerOf(uint256 tokenId) view returns (address)",
     "function tokenURI(uint256 tokenId) view returns (string memory)",
-    "function ownerOf(uint256 tokenId) view returns (address)"
+    "function walletMinted(address) view returns (uint256)",
+    "function name() view returns (string)",
+    "function symbol() view returns (string)"
   ];
   
   // Faucet ABI
@@ -455,14 +456,14 @@
     }
   }
 
-  // Check mint limit for selected NFT
+  // Check mint limit for selected NFT - FIXED: walletMinted ব্যবহার করে
   async function checkMintLimit() {
     if (!nftContract || !userAddress) return;
     
     try {
-      const balance = await nftContract.balanceOf(userAddress);
-      const balanceNum = balance.toNumber ? balance.toNumber() : Number(balance);
-      const remaining = 2 - balanceNum;
+      const walletMinted = await nftContract.walletMinted(userAddress);
+      const mintedNum = walletMinted.toNumber ? walletMinted.toNumber() : Number(walletMinted);
+      const remaining = 2 - mintedNum;
       
       if (remaining <= 0) {
         mintBtn.disabled = true;
@@ -474,9 +475,99 @@
       }
     } catch (e) {
       console.error('Error checking mint limit:', e);
-      // If balanceOf fails, assume user can mint
+      // If walletMinted fails, assume user can mint
       mintBtn.disabled = !isApproved;
       mintBtn.innerText = 'Mint Selected';
+    }
+  }
+
+  // FIXED: NFT Display Function - আপনার contracts অনুযায়ী
+  async function loadOwnedNFTs() {
+    if (!userAddress) {
+      ownedNfts.innerHTML = '<p class="muted">Connect your wallet to view your NFTs</p>';
+      return;
+    }
+    
+    try {
+      ownedNfts.innerHTML = '<p class="muted">Loading your NFTs...</p>';
+      console.log('Starting NFT load for address:', userAddress);
+      
+      let ownedNFTsHTML = '';
+      let totalNFTs = 0;
+      
+      for (const category of CATEGORIES) {
+        try {
+          console.log('Checking category:', category.title);
+          const contract = new ethers.Contract(category.contract, NFT_ABI, provider);
+          
+          // Check how many NFTs this wallet has minted
+          const walletMinted = await contract.walletMinted(userAddress);
+          const mintedCount = walletMinted.toNumber ? walletMinted.toNumber() : Number(walletMinted);
+          console.log(`${category.title} minted count:`, mintedCount);
+          
+          if (mintedCount > 0) {
+            ownedNFTsHTML += `<h3 style="margin-top:20px;color:var(--accent)">${category.title} (${mintedCount})</h3>`;
+            
+            // Get total supply to know the range
+            const totalSupply = await contract.totalSupply();
+            const totalSupplyNum = totalSupply.toNumber ? totalSupply.toNumber() : Number(totalSupply);
+            console.log(`${category.title} total supply:`, totalSupplyNum);
+            
+            // Check each token ID to see if user owns it
+            let foundTokens = 0;
+            for (let tokenId = 1; tokenId <= totalSupplyNum && foundTokens < mintedCount; tokenId++) {
+              try {
+                const owner = await contract.ownerOf(tokenId);
+                if (owner.toLowerCase() === userAddress.toLowerCase()) {
+                  ownedNFTsHTML += `
+                    <div class="owned-nft">
+                      <img src="${IPFS_GATEWAY}/${IMAGE_CID}/${category.file}" alt="${category.title}">
+                      <h3>${category.title} #${tokenId}</h3>
+                      <p>${category.desc}</p>
+                      <div class="mutedSmall">Token ID: ${tokenId}</div>
+                    </div>
+                  `;
+                  totalNFTs++;
+                  foundTokens++;
+                }
+              } catch (tokenError) {
+                // Token might not exist or other error, continue
+                continue;
+              }
+            }
+            
+            // If we couldn't find specific tokens, show generic ones
+            if (foundTokens === 0) {
+              for (let i = 1; i <= mintedCount; i++) {
+                ownedNFTsHTML += `
+                  <div class="owned-nft">
+                    <img src="${IPFS_GATEWAY}/${IMAGE_CID}/${category.file}" alt="${category.title}">
+                    <h3>${category.title} #${i}</h3>
+                    <p>${category.desc}</p>
+                    <div class="mutedSmall">Owned: ${mintedCount} tokens</div>
+                  </div>
+                `;
+                totalNFTs++;
+              }
+            }
+          }
+        } catch (categoryError) {
+          console.error(`Error with ${category.title}:`, categoryError);
+        }
+      }
+      
+      if (totalNFTs === 0) {
+        ownedNFTsHTML = '<p class="muted">No NFTs found. Have you minted any yet?</p>';
+      } else {
+        ownedNFTsHTML = `<div style="margin-bottom: 16px; color: var(--accent); font-weight: 600;">Total NFTs: ${totalNFTs}</div>` + ownedNFTsHTML;
+      }
+      
+      ownedNfts.innerHTML = ownedNFTsHTML;
+      console.log('NFT loading completed. Total:', totalNFTs);
+      
+    } catch (error) {
+      console.error('Error in loadOwnedNFTs:', error);
+      ownedNfts.innerHTML = '<p class="muted">Error loading NFTs. Check console for details.</p>';
     }
   }
 
@@ -776,77 +867,6 @@
       updateFaucetUI();
     }
   };
-
-  // FIXED: Load owned NFTs - Now properly fetches token IDs
-  async function loadOwnedNFTs() {
-    if (!userAddress) {
-      ownedNfts.innerHTML = '<p class="muted">Connect your wallet to view your NFTs</p>';
-      return;
-    }
-    
-    try {
-      ownedNfts.innerHTML = '<p class="muted">Loading your NFTs...</p>';
-      let ownedNFTsHTML = '';
-      let totalNFTs = 0;
-      
-      // Check each NFT contract for owned tokens
-      for (const category of CATEGORIES) {
-        try {
-          const contract = new ethers.Contract(category.contract, NFT_ABI, provider);
-          const balance = await contract.balanceOf(userAddress);
-          const balanceNum = balance.toNumber ? balance.toNumber() : Number(balance);
-          
-          if (balanceNum > 0) {
-            ownedNFTsHTML += `<h3 style="margin-top:20px;color:var(--accent)">${category.title} (${balanceNum})</h3>`;
-            
-            // Try to get actual token IDs using tokenOfOwnerByIndex
-            try {
-              for (let i = 0; i < balanceNum; i++) {
-                const tokenId = await contract.tokenOfOwnerByIndex(userAddress, i);
-                const tokenIdNum = tokenId.toNumber ? tokenId.toNumber() : Number(tokenId);
-                
-                ownedNFTsHTML += `
-                  <div class="owned-nft">
-                    <img src="${IPFS_GATEWAY}/${IMAGE_CID}/${category.file}" alt="${category.title}">
-                    <h3>${category.title} #${tokenIdNum}</h3>
-                    <p>${category.desc}</p>
-                    <div class="mutedSmall">Token ID: ${tokenIdNum}</div>
-                  </div>
-                `;
-                totalNFTs++;
-              }
-            } catch (tokenError) {
-              // Fallback: if tokenOfOwnerByIndex fails, show generic numbers
-              console.warn(`Could not fetch token IDs for ${category.title}:`, tokenError);
-              for (let i = 1; i <= balanceNum; i++) {
-                ownedNFTsHTML += `
-                  <div class="owned-nft">
-                    <img src="${IPFS_GATEWAY}/${IMAGE_CID}/${category.file}" alt="${category.title}">
-                    <h3>${category.title} #${i}</h3>
-                    <p>${category.desc}</p>
-                  </div>
-                `;
-                totalNFTs++;
-              }
-            }
-          }
-        } catch (e) {
-          console.error(`Error checking balance for ${category.title}:`, e);
-        }
-      }
-      
-      if (totalNFTs === 0) {
-        ownedNFTsHTML = '<p class="muted">You don\'t own any NFTs yet. Mint some above!</p>';
-      } else {
-        ownedNFTsHTML = `<div style="margin-bottom: 16px; color: var(--accent); font-weight: 600;">Total NFTs: ${totalNFTs}</div>` + ownedNFTsHTML;
-      }
-      
-      ownedNfts.innerHTML = ownedNFTsHTML;
-    } catch (error) {
-      console.error('Error loading owned NFTs:', error);
-      ownedNfts.innerHTML = '<p class="muted">Error loading NFTs. Please try again.</p>';
-    }
-  }
 
   // Copy contact address functionality
   contactAddress.onclick = async ()=>{
