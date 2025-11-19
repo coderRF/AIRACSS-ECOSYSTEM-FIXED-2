@@ -108,11 +108,19 @@
   .address-value {font-size:12px;word-break:break-all;color:var(--accent);font-weight:600;cursor:pointer;transition:all 0.2s ease;padding:4px 0}
   .address-value:hover {color:var(--accent-2);text-decoration:underline}
   
+  /* NFT Display Styles */
+  .owned-nft {display: inline-block; width: calc(33.333% - 10px); margin: 5px; background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent); padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.04); text-align: center; transition: all 0.3s ease; vertical-align: top}
+  .owned-nft:hover {transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.4)}
+  .owned-nft img {width: 100%; height: 150px; object-fit: cover; border-radius: 10px; margin-bottom: 10px}
+  .owned-nft h3 {margin: 8px 0 6px; font-size: 15px; font-weight: 600}
+  .owned-nft p {margin: 0; color: var(--muted); font-size: 13px}
+  
   /* Responsive Design */
   @media (max-width: 1024px) {
     .container { padding: 16px; }
     .layout { grid-template-columns: 1fr; gap: 18px; }
     .nft { width: calc(50% - 10px); }
+    .owned-nft { width: calc(50% - 10px); }
   }
   
   @media (max-width: 768px) {
@@ -120,6 +128,7 @@
     .brand { width: 100%; }
     .controls { width: 100%; justify-content: flex-start; }
     .nft { width: 100%; }
+    .owned-nft { width: 100%; }
     .info-row { flex-direction: column; align-items: flex-start; }
     .info-row > * { width: 100%; margin-bottom: 10px; }
     input[type=number] { width: 100%; }
@@ -187,15 +196,15 @@
       <div class="layout">
         <div>
           <h2 class="section-title">Mint AIRACSS NFTs</h2>
-          <div class="nft-description">Select a category and mint. Each NFT costs <strong class="highlight">2 AIRACSS</strong>.</div>
+          <div class="nft-description">Select a category and mint. Each NFT costs <strong class="highlight">1 AIRACSS</strong>.</div>
 
           <div class="grid" id="nftGrid" style="margin-top:16px"></div>
 
           <div class="info-row" style="margin-top:18px">
-            <input id="qty" type="number" min="1" max="10" value="1">
+            <input id="qty" type="number" min="1" max="1" value="1">
             <button id="approveBtn" class="success">Approve Token</button>
             <button id="mintBtn" class="warn" disabled>Mint Selected</button>
-            <div style="margin-left:8px" class="mutedSmall">Per tx limit: 10 · Per wallet: 100</div>
+            <div style="margin-left:8px" class="mutedSmall">Per tx limit: 1 · Per wallet: 2</div>
           </div>
 
           <div style="margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
@@ -205,23 +214,28 @@
 
           <div id="status" class="status">Status: not connected</div>
           
+          <!-- NFT Display Section -->
+          <div style="margin-top:28px">
+            <h3 class="section-title">My NFTs</h3>
+            <div id="ownedNfts" style="text-align:center;padding:20px">
+              <p class="muted">Connect your wallet to view your NFTs</p>
+            </div>
+          </div>
+          
           <!-- DeFi Options Section -->
           <div style="margin-top:28px">
             <h3 class="section-title">DeFi Options</h3>
             <div class="defi-tabs">
-              <div class="defi-tab active" data-tab="swap">Swap</div>
+              <div class="defi-tab active" data-tab="pancakeswap">PancakeSwap</div>
               <div class="defi-tab" data-tab="liquidity">Liquidity</div>
             </div>
             
-            <div class="defi-content active" id="swap-content">
+            <div class="defi-content active" id="pancakeswap-content">
               <a href="https://pancakeswap.finance/swap?chain=bscTestnet&chainOut=bscTestnet&inputCurrency=TBNB&outputCurrency=0x7D73fF735E210ab1Da50D931FDA899154f646E80&exactAmount=&exactField=INPUT" 
                  target="_blank" class="defi-link">
                 <div class="defi-icon">↔</div>
                 <div>Swap AIRACSS on PancakeSwap</div>
               </a>
-            </div>
-            
-            <div class="defi-content" id="liquidity-content">
               <a href="https://pancakeswap.finance/liquidity/select/bscTestnet/v2/tBNB/0x7D73fF735E210ab1Da50D931FDA899154f646E80?chain=bscTestnet" 
                  target="_blank" class="defi-link add-liquidity">
                 <div class="defi-icon">+</div>
@@ -231,6 +245,19 @@
                  target="_blank" class="defi-link remove-liquidity">
                 <div class="defi-icon">-</div>
                 <div>Remove Liquidity</div>
+              </a>
+            </div>
+            
+            <div class="defi-content" id="liquidity-content">
+              <a href="https://pancakeswap.finance/liquidity/select/bscTestnet/v2/tBNB/0x7D73fF735E210ab1Da50D931FDA899154f646E80?chain=bscTestnet" 
+                 target="_blank" class="defi-link add-liquidity">
+                <div class="defi-icon">+</div>
+                <div>Add Liquidity on PancakeSwap</div>
+              </a>
+              <a href="https://pancakeswap.finance/v2/remove/0x7D73fF735E210ab1Da50D931FDA899154f646E80/0xae13d989daC2f0dEbFf460aC112a837C89BAa7cd" 
+                 target="_blank" class="defi-link remove-liquidity">
+                <div class="defi-icon">-</div>
+                <div>Remove Liquidity on PancakeSwap</div>
               </a>
             </div>
           </div>
@@ -255,6 +282,22 @@
               <div class="address-label">AIRACSS Contact Address</div>
               <div class="address-value" id="contactAddress">0x7D73fF735E210ab1Da50D931FDA899154f646E80</div>
               <div class="mutedSmall" style="margin-top:6px;font-size:11px">Click to copy address</div>
+            </div>
+            
+            <!-- NFT Contract Addresses -->
+            <div class="address-container" style="margin-top:12px">
+              <div class="address-label">Digital Marge NFT Contract</div>
+              <div class="address-value" id="digitalMargeAddress">0x09e930562A491B11eC3652D6a7c39F48B5813748</div>
+            </div>
+            
+            <div class="address-container" style="margin-top:8px">
+              <div class="address-label">Neural Plus NFT Contract</div>
+              <div class="address-value" id="neuralPlusAddress">0xe95006C67E2A376AA6CdeC7a5935a055115B3D8F</div>
+            </div>
+            
+            <div class="address-container" style="margin-top:8px">
+              <div class="address-label">Quantum Vains NFT Contract</div>
+              <div class="address-value" id="quantumVainsAddress">0x3E263060814a9be5DadA42197Cdf335d0b9feAf2</div>
             </div>
           </div>
         </div>
@@ -286,14 +329,7 @@
   <div id="toast" class="toast" style="display:none"></div>
 
 <script>
-/* Final deploy-ready portal using the ABI you provided.
-   - Faucet ABI (uses requestTokens + canRequest/timeUntilNextRequest)
-   - Token add to MetaMask, copy token address
-   - Approve and mint flows
-   - Faucet cooldown derived from contract read (timeUntilNextRequest)
-   - Serve via Live Server or HTTPS
-*/
-
+/* Fixed NFT Minting and Display */
 (async ()=>{
 
   if (typeof ethers === 'undefined') {
@@ -302,7 +338,12 @@
   }
 
   // ======= CONFIG =======
-  const NFT_CONTRACT = "0xf891bd85C6A64093373c4dc8FC1f6F723E8b4fbc"; // UPDATED NFT CONTRACT ADDRESS
+  const NFT_CONTRACTS = {
+    digital: "0x09e930562A491B11eC3652D6a7c39F48B5813748", // Digital Marge
+    neural: "0xe95006C67E2A376AA6CdeC7a5935a055115B3D8F",  // Neural Plus
+    quantum: "0x3E263060814a9be5DadA42197Cdf335d0b9feAf2"  // Quantum Vains
+  };
+  
   const AIRACSS_TOKEN = "0x7D73fF735E210ab1Da50D931FDA899154f646E80";
   const FAUCET_CONTRACT = "0x0D0D98E79773ADA350Aecda63A3Fd868452fb59C";
 
@@ -311,25 +352,37 @@
   const IPFS_GATEWAY = 'https://gateway.pinata.cloud/ipfs';
 
   const CATEGORIES = [
-    { id:'digital', title:'Digital Marge', desc:'AIRACSS Genesis — Digital Marge', file:'digital_marge.png', price:2 },
-    { id:'quantum', title:'Quantum Vains', desc:'AIRACSS Genesis — Quantum Vains', file:'quantum_vains.png', price:2 },
-    { id:'neural', title:'Neural Plus', desc:'AIRACSS Genesis — Neural Plus', file:'neural_plus.png', price:2 }
+    { id:'digital', title:'Digital Marge', desc:'AIRACSS Genesis — Digital Marge', file:'digital_marge.png', price:1, contract: NFT_CONTRACTS.digital },
+    { id:'neural', title:'Neural Plus', desc:'AIRACSS Genesis — Neural Plus', file:'neural_plus.png', price:1, contract: NFT_CONTRACTS.neural },
+    { id:'quantum', title:'Quantum Vains', desc:'AIRACSS Genesis — Quantum Vains', file:'quantum_vains.png', price:1, contract: NFT_CONTRACTS.quantum }
   ];
 
-  // ABIs
+  // ABIs - FIXED VERSION WITH PROPER NFT FUNCTIONS
   const ERC20_ABI = [
     "function approve(address spender, uint256 amount) public returns (bool)",
     "function allowance(address owner, address spender) public view returns (uint256)",
     "function decimals() view returns (uint8)",
     "function balanceOf(address owner) view returns (uint256)"
   ];
+  
+  // FIXED NFT ABI - Added tokenOfOwnerByIndex and tokenURI functions
   const NFT_ABI = [
     "function mint(uint256 quantity) external",
-    "function minted() public view returns (uint256)",
-    "function totalSupply() public view returns (uint256)"
+    "function balanceOf(address owner) view returns (uint256)",
+    "function totalSupply() view returns (uint256)",
+    "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)",
+    "function tokenURI(uint256 tokenId) view returns (string memory)",
+    "function ownerOf(uint256 tokenId) view returns (address)"
   ];
-  // Faucet ABI (as provided earlier)
-  const FAUCET_ABI = [{"inputs":[{"internalType":"address","name":"_airacssToken","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newCooldown","type":"uint256"}],"name":"CooldownChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newAmount","type":"uint256"}],"name":"DripAmountChanged","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"recipient","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"TokensDripped","type":"event"},{"inputs":[],"name":"airacssToken","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_address","type":"address"}],"name":"canRequest","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"cooldownPeriod","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"dripAmount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"faucetBalance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"fundFaucet","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"lastRequest","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"requestTokens","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_newCooldown","type":"uint256"}],"name":"setCooldownPeriod","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_newAmount","type":"uint256"}],"name":"setDripAmount","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_address","type":"address"}],"name":"timeUntilNextRequest","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"withdrawTokens","outputs":[],"stateMutability":"nonpayable","type":"function"}];
+  
+  // Faucet ABI
+  const FAUCET_ABI = [
+    "function requestTokens() external",
+    "function canRequest(address) view returns (bool)",
+    "function timeUntilNextRequest(address) view returns (uint256)",
+    "function dripAmount() view returns (uint256)",
+    "function faucetBalance() view returns (uint256)"
+  ];
 
   // DOM refs
   const connectBtn = document.getElementById('connectBtn');
@@ -351,6 +404,10 @@
   const faucetTimer = document.getElementById('faucetTimer');
   const toast = document.getElementById('toast');
   const contactAddress = document.getElementById('contactAddress');
+  const ownedNfts = document.getElementById('ownedNfts');
+  const digitalMargeAddress = document.getElementById('digitalMargeAddress');
+  const neuralPlusAddress = document.getElementById('neuralPlusAddress');
+  const quantumVainsAddress = document.getElementById('quantumVainsAddress');
 
   // state
   let provider, signer, userAddress, tokenContract, nftContract, faucetContract;
@@ -390,6 +447,42 @@
     previewImg.src = `${IPFS_GATEWAY}/${IMAGE_CID}/${selected.file}`;
     previewTitle.innerText = selected.title;
     previewDesc.innerText = selected.desc;
+    
+    // Update NFT contract reference
+    if (signer) {
+      nftContract = new ethers.Contract(selected.contract, NFT_ABI, signer);
+      updateNextId();
+      checkMintLimit();
+    }
+  }
+
+  // Check mint limit for selected NFT
+  async function checkMintLimit() {
+    if (!nftContract || !userAddress) return;
+    
+    try {
+      const balance = await nftContract.balanceOf(userAddress);
+      const balanceNum = balance.toNumber ? balance.toNumber() : Number(balance);
+      const remaining = 2 - balanceNum;
+      
+      if (remaining <= 0) {
+        mintBtn.disabled = true;
+        mintBtn.innerText = 'Limit Reached';
+        qtyEl.max = 0;
+        qtyEl.value = 0;
+        showToast(`You already own 2 ${selected.title} NFTs`);
+      } else {
+        mintBtn.disabled = false;
+        mintBtn.innerText = 'Mint Selected';
+        qtyEl.max = Math.min(1, remaining);
+        qtyEl.value = Math.min(1, remaining);
+      }
+    } catch (e) {
+      console.error('Error checking mint limit:', e);
+      // If balanceOf fails, assume user can mint
+      mintBtn.disabled = false;
+      mintBtn.innerText = 'Mint Selected';
+    }
   }
 
   // connect wallet
@@ -402,17 +495,30 @@
       userAddress = await signer.getAddress();
       setStatus('Connected: ' + userAddress);
       connectBtn.style.display='none'; disconnectBtn.style.display='inline-block';
-      // instantiate
+      
+      // instantiate contracts
       tokenContract = new ethers.Contract(AIRACSS_TOKEN, ERC20_ABI, signer);
-      nftContract = new ethers.Contract(NFT_CONTRACT, NFT_ABI, signer);
+      nftContract = new ethers.Contract(selected.contract, NFT_ABI, signer);
       faucetContract = new ethers.Contract(FAUCET_CONTRACT, FAUCET_ABI, signer);
-      try{ tokenDecimals = await tokenContract.decimals(); } catch(e){ tokenDecimals=18; }
-      approveBtn.disabled=false; mintBtn.disabled=false; qtyEl.disabled=false;
+      
+      try{ 
+        tokenDecimals = await tokenContract.decimals(); 
+      } catch(e){ 
+        tokenDecimals=18; 
+      }
+      
+      approveBtn.disabled=false; 
+      mintBtn.disabled=false; 
+      qtyEl.disabled=false;
+      
       updateNextId();
       updateFaucetUI();
+      loadOwnedNFTs();
+      checkMintLimit();
       showToast('Wallet connected');
     }catch(err){
-      console.error(err); setStatus('Connect failed: ' + (err.message||err));
+      console.error(err); 
+      setStatus('Connect failed: ' + (err.message||err));
     }
   };
 
@@ -423,6 +529,7 @@
     setStatus('Disconnected'); showToast('Wallet disconnected');
     if (window.__faucetInterval) { clearInterval(window.__faucetInterval); window.__faucetInterval = null; }
     faucetTimer.innerText = 'Connect wallet to use';
+    ownedNfts.innerHTML = '<p class="muted">Connect your wallet to view your NFTs</p>';
   };
 
   // add token to MetaMask
@@ -471,53 +578,81 @@
       if (!tokenContract) { alert('Connect first'); return; }
       const big = ethers.utils.parseUnits('1000000', tokenDecimals);
       setStatus('Sending approve tx...');
-      const tx = await tokenContract.approve(NFT_CONTRACT, big);
+      const tx = await tokenContract.approve(selected.contract, big);
       lastTx.innerText = 'Approve tx: ' + tx.hash;
       txLink.innerHTML = `<a target="_blank" href="${bscScanTx(tx.hash)}" class="bsc-link">View on BscScan</a>`;
       await tx.wait();
       setStatus('Approve confirmed');
       showToast('Approve confirmed');
-    }catch(err){ console.error(err); setStatus('Approve failed: ' + (err.message||err)); showToast('Approve failed'); }
+    }catch(err){ 
+      console.error(err); 
+      setStatus('Approve failed: ' + (err.message||err)); 
+      showToast('Approve failed'); 
+    }
   };
 
-  // mint
+  // mint - FIXED VERSION
   mintBtn.onclick = async ()=>{
     try{
-      if (!nftContract || !tokenContract) { alert('Connect first'); return; }
-      const qty = Number(qtyEl.value||1);
-      if (!Number.isInteger(qty) || qty<1 || qty>10) { alert('Qty 1-10'); return; }
-      const allowance = await tokenContract.allowance(userAddress, NFT_CONTRACT);
-      const required = ethers.utils.parseUnits((selected.price * qty).toString(), tokenDecimals);
-      if (allowance.lt(required)) { alert('Allowance too low — approve first'); return; }
-      setStatus('Sending mint tx...');
-      let tx;
-      try {
-        const gas = await nftContract.estimateGas.mint(qty, { from: userAddress });
-        tx = await nftContract.mint(qty, { gasLimit: gas.mul(120).div(100) });
-      } catch(e) {
-        tx = await nftContract.mint(qty);
+      if (!nftContract || !tokenContract) { 
+        alert('Connect first'); 
+        return; 
       }
+      
+      const qty = Number(qtyEl.value||1);
+      if (!Number.isInteger(qty) || qty<1 || qty>1) { 
+        alert('Qty must be 1'); 
+        return; 
+      }
+      
+      // Check allowance
+      const allowance = await tokenContract.allowance(userAddress, selected.contract);
+      const required = ethers.utils.parseUnits((selected.price * qty).toString(), tokenDecimals);
+      
+      if (allowance.lt(required)) { 
+        alert('Allowance too low — approve first'); 
+        return; 
+      }
+      
+      setStatus('Sending mint tx...');
+      
+      // Simple mint call without complex error handling
+      const tx = await nftContract.mint(qty);
+      
       lastTx.innerText = 'Mint tx: ' + tx.hash;
       txLink.innerHTML = `<a target="_blank" href="${bscScanTx(tx.hash)}" class="bsc-link">View on BscScan</a>`;
       setStatus('Mint sent: ' + tx.hash);
+      
       await tx.wait();
       setStatus('Mint confirmed: ' + tx.hash);
       showToast('Mint confirmed');
+      
       updateNextId();
-    }catch(err){ console.error(err); setStatus('Mint failed: ' + (err.message||err)); showToast('Mint failed'); }
+      checkMintLimit();
+      // Refresh owned NFTs after minting
+      setTimeout(() => loadOwnedNFTs(), 3000);
+      
+    }catch(err){ 
+      console.error('Mint error:', err); 
+      setStatus('Mint failed: ' + (err.message||err)); 
+      showToast('Mint failed - check console for details'); 
+    }
   };
 
   // update next token id
   async function updateNextId(){
     try{
       if (!nftContract) { nextIdEl.innerText='—'; return; }
-      const minted = await nftContract.minted();
-      const next = minted.toNumber ? minted.toNumber()+1 : Number(minted)+1;
+      const totalSupply = await nftContract.totalSupply();
+      const next = totalSupply.toNumber ? totalSupply.toNumber()+1 : Number(totalSupply)+1;
       nextIdEl.innerText = next;
-    }catch(e){ console.warn('Cannot read minted():', e); nextIdEl.innerText='—'; }
+    }catch(e){ 
+      console.warn('Cannot read totalSupply():', e); 
+      nextIdEl.innerText='—'; 
+    }
   }
 
-  // --- Faucet Functions (BNB Testnet, AIRACSS Faucet) ---
+  // --- Faucet Functions ---
   async function getFaucetState() {
     try {
       if (!faucetContract || !userAddress)
@@ -610,11 +745,110 @@
     }
   };
 
+  // FIXED: Load owned NFTs - Now properly fetches token IDs
+  async function loadOwnedNFTs() {
+    if (!userAddress) {
+      ownedNfts.innerHTML = '<p class="muted">Connect your wallet to view your NFTs</p>';
+      return;
+    }
+    
+    try {
+      ownedNfts.innerHTML = '<p class="muted">Loading your NFTs...</p>';
+      let ownedNFTsHTML = '';
+      let totalNFTs = 0;
+      
+      // Check each NFT contract for owned tokens
+      for (const category of CATEGORIES) {
+        try {
+          const contract = new ethers.Contract(category.contract, NFT_ABI, provider);
+          const balance = await contract.balanceOf(userAddress);
+          const balanceNum = balance.toNumber ? balance.toNumber() : Number(balance);
+          
+          if (balanceNum > 0) {
+            ownedNFTsHTML += `<h3 style="margin-top:20px;color:var(--accent)">${category.title} (${balanceNum})</h3>`;
+            
+            // Try to get actual token IDs using tokenOfOwnerByIndex
+            try {
+              for (let i = 0; i < balanceNum; i++) {
+                const tokenId = await contract.tokenOfOwnerByIndex(userAddress, i);
+                const tokenIdNum = tokenId.toNumber ? tokenId.toNumber() : Number(tokenId);
+                
+                ownedNFTsHTML += `
+                  <div class="owned-nft">
+                    <img src="${IPFS_GATEWAY}/${IMAGE_CID}/${category.file}" alt="${category.title}">
+                    <h3>${category.title} #${tokenIdNum}</h3>
+                    <p>${category.desc}</p>
+                    <div class="mutedSmall">Token ID: ${tokenIdNum}</div>
+                  </div>
+                `;
+                totalNFTs++;
+              }
+            } catch (tokenError) {
+              // Fallback: if tokenOfOwnerByIndex fails, show generic numbers
+              console.warn(`Could not fetch token IDs for ${category.title}:`, tokenError);
+              for (let i = 1; i <= balanceNum; i++) {
+                ownedNFTsHTML += `
+                  <div class="owned-nft">
+                    <img src="${IPFS_GATEWAY}/${IMAGE_CID}/${category.file}" alt="${category.title}">
+                    <h3>${category.title} #${i}</h3>
+                    <p>${category.desc}</p>
+                  </div>
+                `;
+                totalNFTs++;
+              }
+            }
+          }
+        } catch (e) {
+          console.error(`Error checking balance for ${category.title}:`, e);
+        }
+      }
+      
+      if (totalNFTs === 0) {
+        ownedNFTsHTML = '<p class="muted">You don\'t own any NFTs yet. Mint some above!</p>';
+      } else {
+        ownedNFTsHTML = `<div style="margin-bottom: 16px; color: var(--accent); font-weight: 600;">Total NFTs: ${totalNFTs}</div>` + ownedNFTsHTML;
+      }
+      
+      ownedNfts.innerHTML = ownedNFTsHTML;
+    } catch (error) {
+      console.error('Error loading owned NFTs:', error);
+      ownedNfts.innerHTML = '<p class="muted">Error loading NFTs. Please try again.</p>';
+    }
+  }
+
   // Copy contact address functionality
   contactAddress.onclick = async ()=>{
     try{ 
       await navigator.clipboard.writeText(contactAddress.innerText.trim()); 
       showToast('Contact address copied to clipboard'); 
+    } catch(e){ 
+      showToast('Copy failed, please select and copy manually'); 
+    }
+  };
+
+  // Copy NFT contract addresses
+  digitalMargeAddress.onclick = async ()=>{
+    try{ 
+      await navigator.clipboard.writeText(digitalMargeAddress.innerText.trim()); 
+      showToast('Digital Marge contract address copied to clipboard'); 
+    } catch(e){ 
+      showToast('Copy failed, please select and copy manually'); 
+    }
+  };
+
+  neuralPlusAddress.onclick = async ()=>{
+    try{ 
+      await navigator.clipboard.writeText(neuralPlusAddress.innerText.trim()); 
+      showToast('Neural Plus contract address copied to clipboard'); 
+    } catch(e){ 
+      showToast('Copy failed, please select and copy manually'); 
+    }
+  };
+
+  quantumVainsAddress.onclick = async ()=>{
+    try{ 
+      await navigator.clipboard.writeText(quantumVainsAddress.innerText.trim()); 
+      showToast('Quantum Vains contract address copied to clipboard'); 
     } catch(e){ 
       showToast('Copy failed, please select and copy manually'); 
     }
