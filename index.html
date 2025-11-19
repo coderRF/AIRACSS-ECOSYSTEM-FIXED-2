@@ -57,8 +57,6 @@
   .nft p{margin:0;color:var(--muted);font-size:13px}
   .selected{outline:3px solid rgba(167,139,250,0.15);box-shadow:0 8px 30px rgba(167,139,250,0.15);transform:translateY(-2px)}
   .info-row{display:flex;gap:12px;align-items:center;margin-top:16px;flex-wrap:wrap}
-  input[type=number]{width:90px;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.05);color:#e8f6ff;font-weight:600;text-align:center}
-  input[type=number]:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(87,166,255,0.2)}
   .status{margin-top:16px;padding:14px;border-radius:12px;background:#021526;color:#cfe9ff;font-weight:600;border-left:4px solid var(--accent)}
   .preview img{width:100%;height:240px;object-fit:cover;border-radius:12px;border:1px solid rgba(255,255,255,0.05)}
   .muted{color:var(--muted)}
@@ -75,8 +73,7 @@
   .defi-tab {padding:12px 18px;border-radius:10px;background:rgba(255,255,255,0.03);cursor:pointer;font-size:14px;transition:all 0.2s;font-weight:500;flex:1;min-width:120px;text-align:center}
   .defi-tab:hover {background:rgba(255,255,255,0.07)}
   .defi-tab.active {background:var(--accent);color:#021426;font-weight:600;box-shadow:0 4px 12px rgba(87,166,255,0.2)}
-  .defi-content {margin-top:16px;padding:18px;border-radius:12px;background:rgba(0,0,0,0.2);display:none;border:1px solid rgba(255,255,255,0.03)}
-  .defi-content.active {display:block}
+  .defi-content {margin-top:16px;padding:18px;border-radius:12px;background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.03);transition:all 0.3s ease}
   .defi-link {display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;background:var(--pastel-blue);margin-bottom:10px;text-decoration:none;color:#1e293b;transition:all 0.2s;font-weight:500;box-shadow:0 4px 12px rgba(147,197,253,0.3)}
   .defi-link:hover {transform:translateX(4px);box-shadow:0 6px 16px rgba(147,197,253,0.4)}
   .defi-link.add-liquidity {background:var(--pastel-green);box-shadow:0 4px 12px rgba(134,239,172,0.3)}
@@ -115,6 +112,10 @@
   .owned-nft h3 {margin: 8px 0 6px; font-size: 15px; font-weight: 600}
   .owned-nft p {margin: 0; color: var(--muted); font-size: 13px}
   
+  /* Toggle button styles */
+  .toggle-btn {background: var(--gradient-crystal-purple); border: none; color: #021426; padding: 10px 18px; border-radius: 10px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(167,139,250,0.3); margin-top: 16px}
+  .toggle-btn:hover {transform: translateY(-2px); box-shadow: 0 6px 16px rgba(167,139,250,0.4)}
+  
   /* Responsive Design */
   @media (max-width: 1024px) {
     .container { padding: 16px; }
@@ -131,7 +132,6 @@
     .owned-nft { width: 100%; }
     .info-row { flex-direction: column; align-items: flex-start; }
     .info-row > * { width: 100%; margin-bottom: 10px; }
-    input[type=number] { width: 100%; }
     .defi-tab { min-width: 100px; padding: 10px 14px; }
     .card { padding: 18px; }
   }
@@ -192,7 +192,6 @@
           <div class="grid" id="nftGrid" style="margin-top:16px"></div>
 
           <div class="info-row" style="margin-top:18px">
-            <input id="qty" type="number" min="1" max="1" value="1">
             <button id="approveBtn" class="success">Approve Token</button>
             <button id="mintBtn" class="warn" disabled>Mint Selected</button>
             <div style="margin-left:8px" class="mutedSmall">Per tx limit: 1 · Per wallet: 2</div>
@@ -216,11 +215,11 @@
           <!-- DeFi Options Section -->
           <div style="margin-top:28px">
             <h3 class="section-title">DeFi Options</h3>
-            <div class="defi-tabs">
-              <div class="defi-tab active" data-tab="pancakeswap">PancakeSwap</div>
-            </div>
             
-            <div class="defi-content active" id="pancakeswap-content">
+            <!-- Toggle Button for PancakeSwap -->
+            <button id="pancakeToggle" class="toggle-btn">▼ Show PancakeSwap Options</button>
+            
+            <div class="defi-content" id="pancakeswap-content" style="display:none;margin-top:16px">
               <a href="https://pancakeswap.finance/swap?chain=bscTestnet&chainOut=bscTestnet&inputCurrency=TBNB&outputCurrency=0x7D73fF735E210ab1Da50D931FDA899154f646E80&exactAmount=&exactField=INPUT" 
                  target="_blank" class="defi-link">
                 <div class="defi-icon">↔</div>
@@ -351,7 +350,6 @@
   const addTokenBtn = document.getElementById('addTokenBtn');
   const addNetworkBtn = document.getElementById('addNetworkBtn');
   const nftGrid = document.getElementById('nftGrid');
-  const qtyEl = document.getElementById('qty');
   const approveBtn = document.getElementById('approveBtn');
   const mintBtn = document.getElementById('mintBtn');
   const statusEl = document.getElementById('status');
@@ -366,16 +364,32 @@
   const toast = document.getElementById('toast');
   const contactAddress = document.getElementById('contactAddress');
   const ownedNfts = document.getElementById('ownedNfts');
+  const pancakeToggle = document.getElementById('pancakeToggle');
+  const pancakeContent = document.getElementById('pancakeswap-content');
 
   // state
   let provider, signer, userAddress, tokenContract, nftContract, faucetContract;
   let tokenDecimals = 18;
   let selected = CATEGORIES[0];
+  let isApproved = false;
+  let isPancakeOpen = false;
 
   // helpers
   function showToast(msg, t=4000){ toast.innerText = msg; toast.style.display='block'; clearTimeout(toast._t); toast._t=setTimeout(()=>toast.style.display='none',t); }
   function setStatus(txt){ statusEl.innerText = 'Status: ' + txt; }
   function bscScanTx(h){ return `https://testnet.bscscan.com/tx/${h}`; }
+
+  // Toggle PancakeSwap options
+  pancakeToggle.onclick = () => {
+    isPancakeOpen = !isPancakeOpen;
+    if (isPancakeOpen) {
+      pancakeContent.style.display = 'block';
+      pancakeToggle.innerHTML = '▲ Hide PancakeSwap Options';
+    } else {
+      pancakeContent.style.display = 'none';
+      pancakeToggle.innerHTML = '▼ Show PancakeSwap Options';
+    }
+  };
 
   // render NFTs
   function renderNFTs(){
@@ -411,6 +425,33 @@
       nftContract = new ethers.Contract(selected.contract, NFT_ABI, signer);
       updateNextId();
       checkMintLimit();
+      checkAllowance(); // Check allowance when category changes
+    }
+  }
+
+  // Check allowance and update approve button
+  async function checkAllowance() {
+    if (!tokenContract || !userAddress || !selected) return;
+    
+    try {
+      const required = ethers.utils.parseUnits('1', tokenDecimals);
+      const allowance = await tokenContract.allowance(userAddress, selected.contract);
+      
+      if (allowance.gte(required)) {
+        isApproved = true;
+        approveBtn.disabled = true;
+        approveBtn.innerText = 'Approved';
+        approveBtn.style.background = 'var(--gradient-success)';
+        mintBtn.disabled = false;
+      } else {
+        isApproved = false;
+        approveBtn.disabled = false;
+        approveBtn.innerText = 'Approve Token';
+        approveBtn.style.background = 'var(--gradient-primary)';
+        mintBtn.disabled = true;
+      }
+    } catch (e) {
+      console.error('Error checking allowance:', e);
     }
   }
 
@@ -426,19 +467,15 @@
       if (remaining <= 0) {
         mintBtn.disabled = true;
         mintBtn.innerText = 'Limit Reached';
-        qtyEl.max = 0;
-        qtyEl.value = 0;
         showToast(`You already own 2 ${selected.title} NFTs`);
       } else {
-        mintBtn.disabled = false;
+        mintBtn.disabled = !isApproved;
         mintBtn.innerText = 'Mint Selected';
-        qtyEl.max = Math.min(1, remaining);
-        qtyEl.value = Math.min(1, remaining);
       }
     } catch (e) {
       console.error('Error checking mint limit:', e);
       // If balanceOf fails, assume user can mint
-      mintBtn.disabled = false;
+      mintBtn.disabled = !isApproved;
       mintBtn.innerText = 'Mint Selected';
     }
   }
@@ -466,13 +503,13 @@
       }
       
       approveBtn.disabled=false; 
-      mintBtn.disabled=false; 
-      qtyEl.disabled=false;
+      mintBtn.disabled=true; 
       
       updateNextId();
       updateFaucetUI();
       loadOwnedNFTs();
       checkMintLimit();
+      checkAllowance();
       showToast('Wallet connected');
     }catch(err){
       console.error(err); 
@@ -483,7 +520,7 @@
   disconnectBtn.onclick = ()=>{
     signer=null;provider=null;userAddress=null;tokenContract=null;nftContract=null;faucetContract=null;
     connectBtn.style.display='inline-block'; disconnectBtn.style.display='none';
-    approveBtn.disabled=true; mintBtn.disabled=true; qtyEl.disabled=true;
+    approveBtn.disabled=true; mintBtn.disabled=true;
     setStatus('Disconnected'); showToast('Wallet disconnected');
     if (window.__faucetInterval) { clearInterval(window.__faucetInterval); window.__faucetInterval = null; }
     faucetTimer.innerText = 'Connect wallet to use';
@@ -530,22 +567,42 @@
     }
   };
 
-  // approve
+  // approve - FIXED VERSION
   approveBtn.onclick = async ()=>{
     try{
-      if (!tokenContract) { alert('Connect first'); return; }
+      if (!tokenContract || !selected) { 
+        alert('Connect first or select NFT category'); 
+        return; 
+      }
+      
       const big = ethers.utils.parseUnits('1000000', tokenDecimals);
       setStatus('Sending approve tx...');
+      approveBtn.disabled = true;
+      approveBtn.innerText = 'Approving...';
+      
       const tx = await tokenContract.approve(selected.contract, big);
       lastTx.innerText = 'Approve tx: ' + tx.hash;
       txLink.innerHTML = `<a target="_blank" href="${bscScanTx(tx.hash)}" class="bsc-link">View on BscScan</a>`;
+      setStatus('Approve sent: ' + tx.hash);
+      
       await tx.wait();
       setStatus('Approve confirmed');
       showToast('Approve confirmed');
+      
+      // Update button state after approval
+      isApproved = true;
+      approveBtn.disabled = true;
+      approveBtn.innerText = 'Approved';
+      approveBtn.style.background = 'var(--gradient-success)';
+      mintBtn.disabled = false;
+      
     }catch(err){ 
-      console.error(err); 
+      console.error('Approve error:', err); 
       setStatus('Approve failed: ' + (err.message||err)); 
       showToast('Approve failed'); 
+      approveBtn.disabled = false;
+      approveBtn.innerText = 'Approve Token';
+      approveBtn.style.background = 'var(--gradient-primary)';
     }
   };
 
@@ -557,11 +614,7 @@
         return; 
       }
       
-      const qty = Number(qtyEl.value||1);
-      if (!Number.isInteger(qty) || qty<1 || qty>1) { 
-        alert('Qty must be 1'); 
-        return; 
-      }
+      const qty = 1; // Fixed to 1 since quantity input is removed
       
       // Check allowance
       const allowance = await tokenContract.allowance(userAddress, selected.contract);
@@ -573,6 +626,8 @@
       }
       
       setStatus('Sending mint tx...');
+      mintBtn.disabled = true;
+      mintBtn.innerText = 'Minting...';
       
       // Simple mint call without complex error handling
       const tx = await nftContract.mint(qty);
@@ -590,10 +645,16 @@
       // Refresh owned NFTs after minting
       setTimeout(() => loadOwnedNFTs(), 3000);
       
+      // Re-enable mint button
+      mintBtn.disabled = false;
+      mintBtn.innerText = 'Mint Selected';
+      
     }catch(err){ 
       console.error('Mint error:', err); 
       setStatus('Mint failed: ' + (err.message||err)); 
       showToast('Mint failed - check console for details'); 
+      mintBtn.disabled = false;
+      mintBtn.innerText = 'Mint Selected';
     }
   };
 
@@ -643,11 +704,13 @@
         window.__faucetInterval = null;
       }
 
-      if (st.canRequest || st.until <= 0) {
+      if (st.canRequest) {
         faucetTimer.innerText = "Ready";
         faucetBtn.disabled = false;
+        faucetBtn.innerText = "Claim Faucet";
       } else {
         faucetBtn.disabled = true;
+        faucetBtn.innerText = "Claim Faucet";
         const target = Date.now() + st.until * 1000;
 
         function tick() {
@@ -683,14 +746,22 @@
       }
 
       setStatus("Sending faucet transaction...");
+      faucetBtn.disabled = true;
+      faucetBtn.innerText = "Claiming...";
       const tx = await faucetContract.requestTokens();
       lastTx.innerText = "Faucet tx: " + tx.hash;
       txLink.innerHTML = `<a target="_blank" href="${bscScanTx(tx.hash)}" class="bsc-link">View on BscScan</a>`;
+      setStatus('Faucet sent: ' + tx.hash);
       showToast("Transaction sent!");
       await tx.wait();
       setStatus("Faucet confirmed ✅");
       showToast("Faucet claim successful!");
-      setTimeout(() => updateFaucetUI(), 1500);
+      
+      // Update faucet UI after successful claim - FORCE DISABLE
+      faucetBtn.disabled = true;
+      faucetBtn.innerText = "Claim Faucet";
+      updateFaucetUI(); // This will start the timer and re-enable when ready
+      
     } catch (err) {
       console.error("Faucet claim error", err);
       let msg =
@@ -700,6 +771,9 @@
           "Transaction failed");
       showToast(msg);
       setStatus("Faucet failed ❌: " + msg);
+      
+      // Re-enable faucet button on error
+      updateFaucetUI();
     }
   };
 
@@ -783,20 +857,6 @@
       showToast('Copy failed, please select and copy manually'); 
     }
   };
-
-  // DeFi tabs functionality
-  document.querySelectorAll('.defi-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      // Remove active class from all tabs and contents
-      document.querySelectorAll('.defi-tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.defi-content').forEach(c => c.classList.remove('active'));
-      
-      // Add active class to clicked tab and corresponding content
-      tab.classList.add('active');
-      const tabId = tab.getAttribute('data-tab');
-      document.getElementById(`${tabId}-content`).classList.add('active');
-    });
-  });
 
   // initial render & wiring
   renderNFTs();
