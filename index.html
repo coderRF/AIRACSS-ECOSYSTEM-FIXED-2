@@ -105,12 +105,59 @@
   .address-value {font-size:12px;word-break:break-all;color:var(--accent);font-weight:600;cursor:pointer;transition:all 0.2s ease;padding:4px 0}
   .address-value:hover {color:var(--accent-2);text-decoration:underline}
   
-  /* NFT Display Styles */
-  .owned-nft {display: inline-block; width: calc(33.333% - 10px); margin: 5px; background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent); padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.04); text-align: center; transition: all 0.3s ease; vertical-align: top}
-  .owned-nft:hover {transform: translateY(-4px); box-shadow: 0 8px 20px rgba(0,0,0,0.4)}
-  .owned-nft img {width: 100%; height: 150px; object-fit: cover; border-radius: 10px; margin-bottom: 10px}
-  .owned-nft h3 {margin: 8px 0 6px; font-size: 15px; font-weight: 600}
-  .owned-nft p {margin: 0; color: var(--muted); font-size: 13px}
+  /* NFT Display Styles - UPDATED FOR MULTIPLE PER ROW */
+  .owned-nfts-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-top: 16px;
+  }
+  
+  .owned-nft {
+    width: calc(33.333% - 10px);
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), transparent);
+    padding: 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.04);
+    text-align: center;
+    transition: all 0.3s ease;
+    margin-bottom: 14px;
+  }
+  
+  .owned-nft:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+  }
+  
+  .owned-nft img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .owned-nft h3 {
+    margin: 8px 0 6px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  
+  .owned-nft p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  
+  /* Category header styles */
+  .category-header {
+    width: 100%;
+    margin: 20px 0 10px 0;
+    padding: 10px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+    border-left: 4px solid var(--accent);
+  }
   
   /* Toggle button styles */
   .toggle-btn {background: var(--gradient-crystal-purple); border: none; color: #021426; padding: 10px 18px; border-radius: 10px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(167,139,250,0.3); margin-top: 16px}
@@ -204,7 +251,7 @@
 
           <div id="status" class="status">Status: not connected</div>
           
-          <!-- NFT Display Section -->
+          <!-- NFT Display Section - UPDATED LAYOUT -->
           <div style="margin-top:28px">
             <h3 class="section-title">My NFTs</h3>
             <div id="ownedNfts" style="text-align:center;padding:20px">
@@ -481,7 +528,7 @@
     }
   }
 
-  // FIXED: NFT Display Function - আপনার contracts অনুযায়ী
+  // FIXED: NFT Display Function - MULTIPLE PER ROW LAYOUT
   async function loadOwnedNFTs() {
     if (!userAddress) {
       ownedNfts.innerHTML = '<p class="muted">Connect your wallet to view your NFTs</p>';
@@ -506,7 +553,15 @@
           console.log(`${category.title} minted count:`, mintedCount);
           
           if (mintedCount > 0) {
-            ownedNFTsHTML += `<h3 style="margin-top:20px;color:var(--accent)">${category.title} (${mintedCount})</h3>`;
+            // Add category header
+            ownedNFTsHTML += `
+              <div class="category-header">
+                <h3 style="margin:0;color:var(--accent)">${category.title} (${mintedCount})</h3>
+              </div>
+            `;
+            
+            // Start the container for this category
+            ownedNFTsHTML += '<div class="owned-nfts-container">';
             
             // Get total supply to know the range
             const totalSupply = await contract.totalSupply();
@@ -550,6 +605,9 @@
                 totalNFTs++;
               }
             }
+            
+            // Close the container for this category
+            ownedNFTsHTML += '</div>';
           }
         } catch (categoryError) {
           console.error(`Error with ${category.title}:`, categoryError);
